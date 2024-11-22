@@ -2,6 +2,7 @@ import os
 import subprocess
 import glob
 
+
 def run_command(command, cwd=None):
     result = subprocess.run(command, shell=True, cwd=cwd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     if result.returncode != 0:

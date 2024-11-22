@@ -1,3 +1,6 @@
+import struct
+
+
 class Buffer:
     def __init__(self, *slices):
         self.buf = bytearray()
@@ -120,6 +123,20 @@ class Buffer:
         self.write_bytes(self.off, [data])
         self.seek_byte(1, True)
 
+    def write_f64_be(self, off, data):
+        if (off + len(data) * 8) > self.cap:
+            raise ValueError("BufferOverwriteError")
+        if off < 0:
+            raise ValueError("BufferUnderwriteError")
+        
+        for i in range(len(data)):
+            packed_data = struct.pack('>d', data[i])
+            self.buf[off + i * 8: off + (i + 1) * 8] = packed_data
+
+    def write_f64_be_next(self, data):
+        self.write_f64_be(self.off, data)
+        self.seek_byte(len(data)*8, True)
+
     def read_bytes(self, off, n):
         if (off + n) > self.cap:
             raise ValueError("BufferOverreadError")
@@ -138,6 +155,22 @@ class Buffer:
     def read_byte_next(self):
         out = self.read_bytes(self.off, 1)[0]
         self.seek_byte(1, True)
+        return out
+    
+    def read_f64_be(self, off, n):
+        if (off + n * 8) > self.cap:
+            raise ValueError("BufferOverreadError")
+        if off < 0:
+            raise ValueError("BufferUnderreadError")
+        
+        out = []
+        for i in range(n):
+            u = struct.unpack('>d', self.buf[off + i * 8: off + (i + 1) * 8])[0]
+            out.append(u)
+
+    def read_f64_be_next(self, n):
+        out = self.read_f64_be(self.off, n)
+        self.seek_byte(n*8, True)
         return out
 
     def seek_byte(self, off, relative):
