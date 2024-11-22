@@ -1,26 +1,19 @@
-import struct
-
-
 class Buffer:
     def __init__(self, *slices):
         self.buf = bytearray()
         self.off = 0
         self.boff = 0
 
-        if len(slices) == 1:
-            self.buf = bytearray(slices[0])
-        elif len(slices) > 1:
-            for s in slices:
-                self.buf.extend(s)
+        for slice in slices:
+            self.buf.extend(slice)
 
         self.refresh()
 
     def read_bit(self, off):
         if off > (self.bcap - 1):
-            raise Exception("BufferOverreadError")
+            raise ValueError("BufferOverreadError")
         if off < 0:
-            raise Exception("BufferUnderreadError")
-
+            raise ValueError("BufferUnderreadError")
         return (self.buf[off // 8] >> (7 - (off % 8))) & 1
 
     def read_bit_next(self):
@@ -41,10 +34,9 @@ class Buffer:
 
     def set_bit(self, off):
         if off > (self.bcap - 1):
-            raise Exception("BufferOverwriteError")
+            raise ValueError("BufferOverwriteError")
         if off < 0:
-            raise Exception("BufferUnderwriteError")
-
+            raise ValueError("BufferUnderwriteError")
         self.buf[off // 8] |= (1 << (7 - (off % 8)))
 
     def set_bit_next(self):
@@ -53,10 +45,9 @@ class Buffer:
 
     def clear_bit(self, off):
         if off > (self.bcap - 1):
-            raise Exception("BufferOverwriteError")
+            raise ValueError("BufferOverwriteError")
         if off < 0:
-            raise Exception("BufferUnderwriteError")
-
+            raise ValueError("BufferUnderwriteError")
         self.buf[off // 8] &= ~(1 << (7 - (off % 8)))
 
     def clear_bit_next(self):
@@ -76,10 +67,9 @@ class Buffer:
 
     def flip_bit(self, off):
         if off > (self.bcap - 1):
-            raise Exception("BufferOverwriteError")
+            raise ValueError("BufferOverwriteError")
         if off < 0:
-            raise Exception("BufferUnderwriteError")
-
+            raise ValueError("BufferUnderwriteError")
         self.buf[off // 8] ^= (1 << (7 - (off % 8)))
 
     def flip_bit_next(self):
@@ -96,7 +86,7 @@ class Buffer:
 
     def flip_all_bits(self):
         for i in range(len(self.buf)):
-            self.buf[i] ^= 0xFF
+            self.buf[i] = ~self.buf[i]
 
     def seek_bit(self, off, relative):
         if relative:
@@ -114,10 +104,9 @@ class Buffer:
 
     def write_bytes(self, off, data):
         if (off + len(data)) > self.cap:
-            raise Exception("BufferOverwriteError")
+            raise ValueError("BufferOverwriteError")
         if off < 0:
-            raise Exception("BufferUnderwriteError")
-
+            raise ValueError("BufferUnderwriteError")
         self.buf[off:off + len(data)] = data
 
     def write_bytes_next(self, data):
@@ -133,10 +122,9 @@ class Buffer:
 
     def read_bytes(self, off, n):
         if (off + n) > self.cap:
-            raise Exception("BufferOverreadError")
+            raise ValueError("BufferOverreadError")
         if off < 0:
-            raise Exception("BufferUnderreadError")
-
+            raise ValueError("BufferUnderreadError")
         return self.buf[off:off + n]
 
     def read_bytes_next(self, n):
@@ -168,26 +156,20 @@ class Buffer:
 
     def truncate_left(self, n):
         if n < 0:
-            raise Exception("BufferInvalidByteCountError")
-
+            raise ValueError("BufferInvalidByteCountError")
         self.buf = self.buf[n:]
         self.refresh()
 
     def truncate_right(self, n):
         if n < 0:
-            raise Exception("BufferInvalidByteCountError")
-
+            raise ValueError("BufferInvalidByteCountError")
         self.buf = self.buf[:self.cap - n]
         self.refresh()
 
     def grow(self, n):
         if n < 0:
-            raise Exception("BufferInvalidByteCountError")
-
-        if n <= len(self.buf) - self.cap:
-            self.buf = self.buf[:self.cap + n]
-        else:
-            self.buf.extend(bytearray(n))
+            raise ValueError("BufferInvalidByteCountError")
+        self.buf.extend([0] * n)
         self.refresh()
 
     def refresh(self):
@@ -195,14 +177,14 @@ class Buffer:
         self.bcap = self.cap * 8
 
     def reset(self):
-        self.buf = bytearray()
+        self.buf.clear()
         self.off = 0
         self.boff = 0
         self.cap = 0
         self.bcap = 0
 
     def bytes(self):
-        return bytes(self.buf)
+        return self.buf
 
     def byte_capacity(self):
         return self.cap
